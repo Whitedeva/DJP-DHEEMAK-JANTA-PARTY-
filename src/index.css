@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Custom Color Palette declared as style custom tokens in Tailwind v4 */
+  --color-djp-offwhite: #F7F4ED;
+  --color-djp-green: #14532D;
+  --color-djp-saffron: #FF9933;
+  --color-djp-navy: #1E3A8A;
+  --color-djp-gold: #D4AF37;
+  --color-djp-charcoal: #1C1C1C;
+}
+
+body {
+  background-color: var(--color-djp-offwhite);
+  color: var(--color-djp-charcoal);
+  font-family: var(--font-sans);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-dark {
+  background: rgba(20, 83, 45, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(20, 83, 45, 0.15);
+}
+
+.card-shadow {
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 4px 12px -2px rgba(28, 28, 28, 0.03),
+    0 12px 24px -10px rgba(20, 83, 45, 0.05);
+}
+
+.card-shadow-hover {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-shadow-hover:hover {
+  transform: translateY(-6px) scale(1.015);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.04),
+    0 12px 20px -4px rgba(28, 28, 28, 0.08),
+    0 24px 38px -12px rgba(20, 83, 45, 0.12);
+}

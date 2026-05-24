@@ -1,0 +1,177 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. GLOBAL SAFETY NET: DEFAULT-DENY
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- REUSABLE HELPER FUNCTIONS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true);
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Check if user is the bootstrapped admin email or is defined in the admins collection
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'khanumairkhan9600@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- ENTITY SCHEMA VALIDATIONS (THE ANTI-UPDATE-GAP) ---
+
+    function isValidAdmin(data) {
+      return data.keys().hasAll(['email']) 
+        && data.keys().size() == 1
+        && data.email is string 
+        && data.email.size() <= 200;
+    }
+
+    function isValidMember(data) {
+      return data.keys().hasAll(['uid', 'fullName', 'email', 'phone', 'state', 'district', 'tehsil', 'role', 'createdAt', 'membershipId'])
+        && data.keys().size() == 10
+        && data.uid is string && data.uid.size() <= 128
+        && data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 200
+        && data.phone is string && data.phone.size() <= 20
+        && data.state is string && data.state.size() >= 2 && data.state.size() <= 50
+        && data.district is string && data.district.size() >= 2 && data.district.size() <= 100
+        && data.tehsil is string && data.tehsil.size() <= 100
+        && data.role is string && (data.role == 'member' || data.role == 'volunteer')
+        && data.membershipId is string && data.membershipId.size() >= 6 && data.membershipId.size() <= 32;
+    }
+
+    function isValidNews(data) {
+      return data.keys().hasAll(['title', 'content', 'category', 'createdAt', 'imageUrl', 'published'])
+        && data.keys().size() == 6
+        && data.title is string && data.title.size() >= 3 && data.title.size() <= 150
+        && data.content is string && data.content.size() >= 10 && data.content.size() <= 10000
+        && data.category is string && (data.category == 'announcement' || data.category == 'event' || data.category == 'campaign')
+        && data.imageUrl is string && data.imageUrl.size() <= 2083
+        && data.published is bool;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['fullName', 'email', 'category', 'message', 'createdAt'])
+        && data.keys().size() == 5
+        && data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 200
+        && data.category is string && (data.category == 'suggestion' || data.category == 'support' || data.category == 'issue_report')
+        && data.message is string && data.message.size() >= 5 && data.message.size() <= 2000;
+    }
+
+    function isValidManifesto(data) {
+      return data.keys().hasAll(['topic', 'title', 'content', 'items', 'updatedAt'])
+        && data.keys().size() == 5
+        && data.topic is string && data.topic.size() <= 50
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 100
+        && data.content is string && data.content.size() >= 10 && data.content.size() <= 5000
+        && data.items is list && data.items.size() <= 20;
+    }
+
+    function isValidDonation(data) {
+      return data.keys().hasAll(['name', 'amount', 'transactionId', 'timestamp'])
+        && data.keys().size() == 4
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+        && data.amount is number && data.amount > 0 && data.amount <= 1000000
+        && data.transactionId is string && data.transactionId.size() >= 6 && data.transactionId.size() <= 64;
+    }
+
+    // --- FIRESTORE POLICY ENFORCEMENTS ---
+
+    // 1. ADMINS COLLECTION
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() && isValidId(adminId) && isValidAdmin(incoming());
+    }
+
+    // 2. MEMBERS COLLECTION
+    match /members/{uid} {
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin(); // Force secure search queries; only admins can scrape the list in bulk
+      allow create: if isOwner(uid) 
+        && isValidId(uid) 
+        && isValidMember(incoming()) 
+        && incoming().uid == uid
+        && incoming().createdAt == request.time;
+      allow update: if isOwner(uid) 
+        && isValidId(uid) 
+        && isValidMember(incoming())
+        && incoming().uid == uid
+        && incoming().email == existing().email // Email immutable
+        && incoming().membershipId == existing().membershipId // MembershipId immutable
+        && incoming().createdAt == existing().createdAt // CreatedAt immutable
+        && incoming().role == existing().role // Role immutable (prevents self-elevation)
+        && incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'phone', 'state', 'district', 'tehsil']);
+      allow delete: if isAdmin() && isValidId(uid);
+    }
+
+    // 3. NEWS COLLECTION
+    match /news/{newsId} {
+      allow get, list: if true; // Globally viewable announcements
+      allow create: if isAdmin() 
+        && isValidId(newsId) 
+        && isValidNews(incoming()) 
+        && incoming().createdAt == request.time;
+      allow update: if isAdmin() 
+        && isValidId(newsId) 
+        && isValidNews(incoming());
+      allow delete: if isAdmin() && isValidId(newsId);
+    }
+
+    // 4. MESSAGES COLLECTION
+    match /messages/{messageId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin(); // Secure list query enforcer
+      allow create: if isValidId(messageId) 
+        && isValidMessage(incoming())
+        && incoming().createdAt == request.time;
+      allow update, delete: if isAdmin() && isValidId(messageId);
+    }
+
+    // 5. MANIFESTO COLLECTION
+    match /manifesto/{manifestoId} {
+      allow get, list: if true; // Globally viewable manifesto pillars
+      allow create: if isAdmin() 
+        && isValidId(manifestoId) 
+        && isValidManifesto(incoming())
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin() 
+        && isValidId(manifestoId) 
+        && isValidManifesto(incoming())
+        && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(manifestoId);
+    }
+
+    // 6. DONATIONS LOG COLLECTION (TRANSPARENCY LEDGER)
+    match /donations/{donationId} {
+      allow get, list: if true; // Full transparency: anyone can read logged donation receipts
+      allow create: if isValidId(donationId) 
+        && isValidDonation(incoming())
+        && incoming().timestamp == request.time;
+      allow update, delete: if false; // Immutable logs: contributions can never be tampered with once registered
+    }
+  }
+}

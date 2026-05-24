@@ -1,0 +1,208 @@
+{
+  "entities": {
+    "Admin": {
+      "title": "Admin",
+      "description": "An administrative user.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Admin email address"
+        }
+      },
+      "required": ["email"]
+    },
+    "Member": {
+      "title": "Member",
+      "description": "A registered member or volunteer of the party.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth unique identifier"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Member's full name"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number"
+        },
+        "state": {
+          "type": "string",
+          "description": "Indian State"
+        },
+        "district": {
+          "type": "string",
+          "description": "District (Zilla)"
+        },
+        "tehsil": {
+          "type": "string",
+          "description": "Tehsil"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role: 'member' or 'volunteer'",
+          "enum": ["member", "volunteer"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Registration date"
+        },
+        "membershipId": {
+          "type": "string",
+          "description": "Generated DJP Membership Certificate ID"
+        }
+      },
+      "required": ["uid", "fullName", "email", "state", "district", "role", "createdAt", "membershipId"]
+    },
+    "News": {
+      "title": "News",
+      "description": "Dynamic party announce cards.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Article headline"
+        },
+        "content": {
+          "type": "string",
+          "description": "Body copy of the article"
+        },
+        "category": {
+          "type": "string",
+          "description": "Announcement, Event, Campaign"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "Visual element link"
+        },
+        "published": {
+          "type": "boolean",
+          "description": "Live toggle"
+        }
+      },
+      "required": ["title", "content", "category", "createdAt", "published"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Public feedback and community reports.",
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "description": "Name of citizen"
+        },
+        "email": {
+          "type": "string",
+          "description": "Citizen email"
+        },
+        "category": {
+          "type": "string",
+          "description": "Suggestion, Support, Issue Report"
+        },
+        "message": {
+          "type": "string",
+          "description": "Content of submission"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Submission time"
+        }
+      },
+      "required": ["fullName", "email", "category", "message", "createdAt"]
+    },
+    "Manifesto": {
+      "title": "Manifesto",
+      "description": "Party policy platform values loaded dynamically.",
+      "type": "object",
+      "properties": {
+        "topic": {
+          "type": "string",
+          "description": "System topic value e.g. 'EMPLOYMENT', 'HEALTHCARE'"
+        },
+        "title": {
+          "type": "string",
+          "description": "Pillar name"
+        },
+        "content": {
+          "type": "string",
+          "description": "Detailed explanation of commitments"
+        },
+        "items": {
+          "type": "array",
+          "description": "Specific bullet point deliverables"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last edit timestamp"
+        }
+      },
+      "required": ["topic", "title", "content", "updatedAt"]
+    },
+    "Donation": {
+      "title": "Donation",
+      "description": "Slips recorded on-chain, logged cleanly.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Patron display name"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount in INR"
+        },
+        "transactionId": {
+          "type": "string",
+          "description": "Log hash or transaction reference"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Receipt timestamp"
+        }
+      },
+      "required": ["name", "amount", "transactionId", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Authenticated admins"
+    },
+    "/members/{uid}": {
+      "schema": "Member",
+      "description": "Registered campaign participants state"
+    },
+    "/news/{newsId}": {
+      "schema": "News",
+      "description": "Party news dashboard"
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Community inputs box"
+    },
+    "/manifesto/{manifestoId}": {
+      "schema": "Manifesto",
+      "description": "Editable core policies"
+    },
+    "/donations/{donationId}": {
+      "schema": "Donation",
+      "description": "Public contribution receipts"
+    }
+  }
+}

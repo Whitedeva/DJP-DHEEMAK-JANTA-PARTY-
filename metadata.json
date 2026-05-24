@@ -1,0 +1,6 @@
+{
+  "name": "Dheemak Janta Party",
+  "description": "Official website of Dheemak Janta Party (DJP), a modern Indian political movement focused on employment, healthcare, education, equality, democracy, and a clean green nation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
